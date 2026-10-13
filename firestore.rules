@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidDeck(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 500)) &&
+             (!('category' in data) || data.category == null || (data.category is string && data.category.size() <= 50)) &&
+             (!('colorHex' in data) || data.colorHex == null || (data.colorHex is string && data.colorHex.size() <= 20)) &&
+             (!('cardCount' in data) || (data.cardCount is int && data.cardCount >= 0)) &&
+             (!('isPublic' in data) || data.isPublic is bool);
+    }
+
+    function isValidCard(data) {
+      return data.deckId is string && data.deckId.size() <= 128 &&
+             data.front is string && data.front.size() >= 1 && data.front.size() <= 1000 &&
+             data.back is string && data.back.size() >= 1 && data.back.size() <= 2000 &&
+             (!('hint' in data) || data.hint == null || (data.hint is string && data.hint.size() <= 500)) &&
+             (!('notes' in data) || data.notes == null || (data.notes is string && data.notes.size() <= 1000)) &&
+             (!('isStarred' in data) || data.isStarred is bool) &&
+             data.repetitions is int && data.repetitions >= 0 &&
+             data.intervalDays is int && data.intervalDays >= 1 &&
+             data.easeFactor is number && data.easeFactor >= 1.0 && data.easeFactor <= 10.0 &&
+             data.nextReviewDate is int &&
+             (!('lastReviewedDate' in data) || data.lastReviewedDate is int) &&
+             (!('reviewCount' in data) || (data.reviewCount is int && data.reviewCount >= 0)) &&
+             (!('masteryLevel' in data) || (data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 5));
+    }
+
+    function isValidPublicDeck(data) {
+      return data.authorId is string && data.authorId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 50 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 500)) &&
+             (!('category' in data) || data.category == null || (data.category is string && data.category.size() <= 50)) &&
+             (!('cardCount' in data) || (data.cardCount is int && data.cardCount >= 0)) &&
+             data.cardsJson is string && data.cardsJson.size() <= 100000 &&
+             (!('downloads' in data) || (data.downloads is int && data.downloads >= 0));
+    }
+
+    // User Decks
+    match /users/{userId}/decks/{deckId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+                       incoming().userId == userId &&
+                       isValidId(deckId) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().keys().hasAll(['userId', 'title', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'title', 'description', 'category', 'colorHex', 'cardCount', 'isPublic', 'createdAt', 'updatedAt']) &&
+                       isValidDeck(incoming());
+
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidDeck(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'colorHex', 'cardCount', 'isPublic', 'updatedAt']);
+
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+
+      // Cards Subcollection
+      match /cards/{cardId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() && request.auth.uid == userId &&
+                         isValidId(cardId) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().keys().hasAll(['deckId', 'front', 'back', 'repetitions', 'intervalDays', 'easeFactor', 'nextReviewDate', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['deckId', 'front', 'back', 'hint', 'notes', 'isStarred', 'repetitions', 'intervalDays', 'easeFactor', 'nextReviewDate', 'lastReviewedDate', 'reviewCount', 'masteryLevel', 'createdAt', 'updatedAt']) &&
+                         isValidCard(incoming());
+
+        allow update: if isSignedIn() && request.auth.uid == userId &&
+                         incoming().deckId == existing().deckId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidCard(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['front', 'back', 'hint', 'notes', 'isStarred', 'repetitions', 'intervalDays', 'easeFactor', 'nextReviewDate', 'lastReviewedDate', 'reviewCount', 'masteryLevel', 'updatedAt']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // Public Decks (Community Explore)
+    match /public_decks/{deckId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isSignedIn() &&
+                       incoming().authorId == request.auth.uid &&
+                       isValidId(deckId) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().keys().hasAll(['authorId', 'authorName', 'title', 'cardsJson', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['authorId', 'authorName', 'title', 'description', 'category', 'cardCount', 'cardsJson', 'downloads', 'createdAt', 'updatedAt']) &&
+                       isValidPublicDeck(incoming());
+
+      allow update: if isSignedIn() && (
+        (incoming().authorId == request.auth.uid && existing().authorId == request.auth.uid &&
+         incoming().createdAt == existing().createdAt &&
+         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+         isValidPublicDeck(incoming()) &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'cardCount', 'cardsJson', 'downloads', 'updatedAt'])) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['downloads']) && incoming().downloads == existing().downloads + 1)
+      );
+
+      allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "UserDeck": {
+      "title": "UserDeck",
+      "description": "A user-owned flashcard deck containing metadata, category, and total card count",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Deck title (1-100 characters)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Deck description (up to 500 characters)"
+        },
+        "category": {
+          "type": "string",
+          "description": "Study category e.g. Languages, Science, History"
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Visual accent color hex code"
+        },
+        "cardCount": {
+          "type": "integer",
+          "description": "Total cards in this deck"
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether this deck is shared with the community"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["userId", "title", "createdAt", "updatedAt"]
+    },
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "A single flashcard with front/back content and SM-2 spaced repetition state",
+      "type": "object",
+      "properties": {
+        "deckId": {
+          "type": "string",
+          "description": "ID of the parent deck"
+        },
+        "front": {
+          "type": "string",
+          "description": "Front face / term / question"
+        },
+        "back": {
+          "type": "string",
+          "description": "Back face / definition / answer"
+        },
+        "hint": {
+          "type": "string",
+          "description": "Optional study hint"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional detailed notes"
+        },
+        "isStarred": {
+          "type": "boolean",
+          "description": "Whether the user starred this card for focused study"
+        },
+        "repetitions": {
+          "type": "integer",
+          "description": "SM-2 consecutive correct review count"
+        },
+        "intervalDays": {
+          "type": "integer",
+          "description": "SM-2 current scheduled interval in days"
+        },
+        "easeFactor": {
+          "type": "number",
+          "description": "SM-2 easiness factor (minimum 1.3)"
+        },
+        "nextReviewDate": {
+          "type": "integer",
+          "description": "Next scheduled review date in epoch milliseconds"
+        },
+        "lastReviewedDate": {
+          "type": "integer",
+          "description": "Last reviewed timestamp in epoch milliseconds"
+        },
+        "reviewCount": {
+          "type": "integer",
+          "description": "Total times this card has been reviewed"
+        },
+        "masteryLevel": {
+          "type": "integer",
+          "description": "Mastery stage: 0=New, 1=Learning, 2=Reviewing, 3=Mastered"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["deckId", "front", "back", "repetitions", "intervalDays", "easeFactor", "nextReviewDate", "createdAt", "updatedAt"]
+    },
+    "PublicDeck": {
+      "title": "PublicDeck",
+      "description": "A community-shared flashcard deck for public discovery and instant import",
+      "type": "object",
+      "properties": {
+        "authorId": {
+          "type": "string",
+          "description": "User UID who published the deck"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Display name of the author"
+        },
+        "title": {
+          "type": "string",
+          "description": "Deck title (1-100 characters)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Deck description (up to 500 characters)"
+        },
+        "category": {
+          "type": "string",
+          "description": "Deck category"
+        },
+        "cardCount": {
+          "type": "integer",
+          "description": "Number of cards in deck"
+        },
+        "cardsJson": {
+          "type": "string",
+          "description": "JSON serialized cards payload for rapid import"
+        },
+        "downloads": {
+          "type": "integer",
+          "description": "Count of times imported by community users"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["authorId", "authorName", "title", "cardsJson", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/decks/{deckId}": {
+      "schema": "UserDeck",
+      "description": "Personal decks created and owned by a user"
+    },
+    "/users/{userId}/decks/{deckId}/cards/{cardId}": {
+      "schema": "Flashcard",
+      "description": "Flashcards within a user deck with SM-2 spaced repetition state"
+    },
+    "/public_decks/{deckId}": {
+      "schema": "PublicDeck",
+      "description": "Shared community decks accessible for reading and copying"
+    }
+  }
+}

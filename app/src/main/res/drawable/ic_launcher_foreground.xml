@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Back card (tilted slightly, soft white opacity) -->
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M38,24 h36 c3.3,0 6,2.7 6,6 v42 c0,3.3 -2.7,6 -6,6 h-36 c-3.3,0 -6,-2.7 -6,-6 v-42 c0,-3.3 2.7,-6 6,-6 z" />
+
+    <!-- Front card (bright crisp white) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M30,32 h36 c3.3,0 6,2.7 6,6 v42 c0,3.3 -2.7,6 -6,6 h-36 c-3.3,0 -6,-2.7 -6,-6 v-42 c0,-3.3 2.7,-6 6,-6 z" />
+
+    <!-- Lightning flash memory pulse inside front card -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M49,38 L40,55 h8 l-3,17 12,-20 h-8 l5,-14 z" />
+</vector>

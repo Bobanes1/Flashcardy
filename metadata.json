@@ -1,0 +1,6 @@
+{
+  "name": "StudyPulse",
+  "description": "Quizlet-style flashcard study app with SM-2 spaced repetition, interactive quiz, match game, and deck sharing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
